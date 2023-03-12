@@ -10,7 +10,7 @@ install_swoole() {
 
     EXTENSION_DIR=$(php-config --extension-dir)
     if [ -f "${EXTENSION_DIR}/swoole.so" ]; then
-        echo 'extension=swoole.so' > /usr/local/php/etc/php.d/03-swoole.ini
+        echo 'extension=swoole.so' > /usr/local/php/etc/php.d/swoole.ini
     fi
 }
 

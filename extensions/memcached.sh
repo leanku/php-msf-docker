@@ -12,7 +12,7 @@ install_pecl_memcached() {
 
     EXTENSION_DIR=$(php-config --extension-dir)
     if [ -f "${EXTENSION_DIR}/memcached.so" ]; then
-        echo 'extension=memcached.so' > /usr/local/php/etc/php.d/05-memcached.ini
+        echo 'extension=memcached.so' > /usr/local/php/etc/php.d/memcached.ini
     fi
 
     cd ..
@@ -28,7 +28,7 @@ install_pecl_memcache() {
 
     EXTENSION_DIR=$(php-config --extension-dir)
     if [ -f "${EXTENSION_DIR}/memcache.so" ]; then
-        echo 'extension=memcache.so' > /usr/local/php/etc/php.d/05-memcache.ini
+        echo 'extension=memcache.so' > /usr/local/php/etc/php.d/memcache.ini
     fi
 
     cd ..

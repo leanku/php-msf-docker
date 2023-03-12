@@ -41,28 +41,26 @@ docker run --rm -itleanku/php-msf-docker:latest nginx -v
 ### 默认启动
 ```
 docker run -it -d -p 2202:22 -p 80:80 -p 3306:3306 -p 8000:8000 -p 9501:9501 \
-leanku/php-msf-docker
+lenaku/php-msf:0.0.1
 ```
+------
+
+### SSH  
+
+默认用户：super   密码：123456
 
 ------
 
-### 自定义网站目录
+### Windows 运行示例
 ```
-docker run --privileged --restart=always -it -d --hostname=php-msf  --name=php-msf-docker -p 2202:22 -p 80:80 -p 3306:3306 -p 8000:8000 -p 9501:9501 -v /Users/lixiaokang/Docker/www:/php-msf/data/www lenaku/php-msf:0.0.1
+docker run --privileged --restart=always -it -d --hostname=php-msf  --name=php-msf-docker -p 2202:22 -p 80:80 -p 3306:3306 -p 8000:8000 -p 9501:9501 -v /c/docker/www:/php-msf/data/www leanku/php-msf-docker:0.0.1
 ```
-
 ------
 
-### 绑定域名 和 使用 ```SSL``` 证书，让网站支持 ```HTTPS```
+### mac运行示例
 ```
-docker run -d -p 38082:80 \
--p 38083:443 \
--v $(pwd)/wwwroot:/data/wwwroot \
--v $(pwd)/wwwlogs:/data/wwwlogs \
--v $(pwd)/vhost:/usr/local/nginx/conf/vhost \
--v $(pwd)/ssl:/usr/local/nginx/conf/ssl \
-leanku/php-msf-docker
-```       
+docker run --privileged --restart=always -it -d --hostname=php-msf  --name=php-msf-docker -p 2202:22 -p 80:80 -p 3306:3306 -p 8000:8000 -p 9501:9501 -v /Users/username/Docker/www:/php-msf/data/www lenaku/php-msf:0.0.1
+```
 
 ------
 

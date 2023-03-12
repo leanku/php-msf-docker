@@ -39,13 +39,14 @@ install_extensions() {
     fi
 }
 
+# start sshd
+/usr/sbin/sshd -D &
+
 if [ "${1}" = "-D" ]; then
     install_extensions 2>&1 | tee ./install.log 
-
-    # start supervisord and services
-    # exec chmod 777 /var/run/supervisor/supervisor.sock
+    
+    # start supervisord
     exec /usr/bin/supervisord -n -c /etc/supervisord.conf
-    # exec /usr/sbin/sshd -D
 else
     exec "$@"
 fi

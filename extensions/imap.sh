@@ -13,7 +13,7 @@ install_imap(){
 
     EXTENSION_DIR=$(php-config --extension-dir)
     if [ -f "${EXTENSION_DIR}/imap.so" ]; then
-        echo 'extension=imap.so' > /usr/local/php/etc/php.d/04-imap.ini
+        echo 'extension=imap.so' > /usr/local/php/etc/php.d/imap.ini
     fi
 }
 

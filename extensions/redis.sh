@@ -11,7 +11,7 @@ install_redis() {
 
     EXTENSION_DIR=$(php-config --extension-dir)
     if [ -f "${EXTENSION_DIR}/redis.so" ]; then
-        echo 'extension=redis.so' > /usr/local/php/etc/php.d/05-redis.ini
+        echo 'extension=redis.so' > /usr/local/php/etc/php.d/redis.ini
     fi
 }
 

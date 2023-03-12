@@ -17,7 +17,7 @@ RUN set -eux \
     mv /etc/yum.repos.d/CentOS-Base.repo /etc/yum.repos.d/CentOS-Base.repo.backup ; \
     wget -O /etc/yum.repos.d/CentOS-Base.repo https://mirrors.aliyun.com/repo/Centos-7.repo ; \
     # yum install
-    yum install -y cc gcc gcc-c++ zlib zlib-devel bzip2-devel openssl openssl-devel ncurses-devel sqlite-devel net-tools tar gzip bzip2 ; \
+    yum install -y cc gcc gcc-c++ zlib zlib-devel bzip2-devel openssl-devel ncurses-devel sqlite-devel tar gzip bzip2 ; \
     rpm -ivh https://dl.fedoraproject.org/pub/epel/7/x86_64/Packages/e/epel-release-7-14.noarch.rpm ; \
     yum install -y  libargon2 libargon2-devel libtool libtool-tldl libtool-ltdl-devel cmake3 ; \
     yum install -y \
@@ -27,7 +27,8 @@ RUN set -eux \
     libcurl3-gnutls libcurl4-gnutls-dev libcurl4-openssl-dev libpng-dev libjpeg8 libjpeg8-dev \
     libicu-devel libxslt1-devel libzip-devel libssl-devel libfreetype-devel libfreetype6 libpq-devel libpq5 libpcre3 libpcre3-devel libsodium-devel ; \
     ln -s /usr/lib64/libc-client.so /usr/lib/libc-client.so ; \
-    yum install -y git python3 python3-devel vim curl supervisor openssh-server ; \
+    yum -y install net-tools openssl openssh-server ; \
+    yum install -y git python3 python3-devel vim curl supervisor ; \
     yum install -y nodejs && rpm -qa 'node|npm'
    
 
@@ -99,13 +100,25 @@ RUN set -eux \
     ln -s /usr/local/nginx/sbin/* /usr/local/bin/ ; \
     ln -sf /usr/share/zoneinfo/Asia/Chongqing /etc/localtime ; \
     # useradd
-    echo "root:123456" | chpasswd ; \
+    echo "root:RIRM7X1c" | chpasswd ; \
     ssh-keygen -t rsa -f /etc/ssh/ssh_host_rsa_key ; \
     ssh-keygen -t rsa -f /etc/ssh/ssh_host_ecdsa_key ; \
     ssh-keygen -t rsa -f /etc/ssh/ssh_host_ed25519_key ; \
-    useradd -r -s /sbin/nologin -d "${NGX_WWW_ROOT}" -m -k no super ; \
+    #useradd -r -s /sbin/nologin -d "${NGX_WWW_ROOT}" -m -k no super ; \
+    useradd super ; \
     echo 'super:123456' |chpasswd ; \
     echo 'super  ALL=(ALL)  NOPASSWD: ALL' > /etc/sudoers ; \
+    # ssh
+    echo y | ssh-keygen -t rsa -f /etc/ssh/ssh_host_rsa_key -N '' ; \
+    echo y | ssh-keygen -t dsa -f /etc/ssh/ssh_host_dsa_key -N '' ; \
+    echo y | ssh-keygen -t ecdsa -f /etc/ssh/ssh_host_ecdsa_key -N '' ; \
+    echo y | ssh-keygen -t ed25519 -f /etc/ssh/ssh_host_ed25519_key -N '' ; \
+    sed -ri '/#Port 22/cPort 22' /etc/ssh/sshd_config ; \
+    sed -ri '/#ListenAddress 0.0.0.0/cListenAddress 0.0.0.0' /etc/ssh/sshd_config ; \
+    sed -ri '/#UseDNS yes/cUseDNS no' /etc/ssh/sshd_config ; \
+    echo "RSAAuthentication yes" >> /etc/ssh/sshd_config ; \
+    echo "PubkeyAuthentication yes" >> /etc/ssh/sshd_config ; \
+    echo "AllowUsers root super" >> /etc/ssh/sshd_config ; \
     cd .. ; \
     # rabbitmq-c
     if [[ -n "${GH_MIRROR_URL}" ]] ; then \
@@ -240,7 +253,9 @@ COPY www "${NGX_WWW_ROOT}"
 COPY supervisord/supervisord.conf /etc/supervisord.conf
 COPY supervisord/conf.d /etc/supervisord.d
 COPY entrypoint.sh /home
-RUN chown -R super:super "${NGX_WWW_ROOT}" ; \
+COPY motd /etc/motd
+RUN yum clean all ; \
+    chown -R super:super "${NGX_WWW_ROOT}" ; \
     mkdir -p /var/log/supervisor ; \
     touch /var/log/supervisor/supervisord.log ; \
     touch /var/run/supervisor.sock ; \
@@ -248,14 +263,17 @@ RUN chown -R super:super "${NGX_WWW_ROOT}" ; \
     chmod 777 /var/log ; \
     chmod 777 /var/log/supervisor/supervisord.log ; \
     chmod 777 /var/run/supervisor.sock ; \
-    chown -R super:super /usr/local/nginx/sbin ; \
+    chown -R super:super /usr/local/nginx ; \
     chown -R super:super /php-msf/data ; \
     chown -R super:super /usr/local/php ; \
-    chmod 777 /usr/local/nginx/sbin ; \
+    chmod 777 /usr/local/nginx ; \
     chown -R super:super /usr/local/redis ; \
     chown -R super:super  /var/log/supervisor ; \
     chown -R super:super  /var/run ; \
     chmod 777 /var/run ; \
+    chown -R super:super /usr/sbin/sshd ; \
+    chmod 777 /usr/sbin/sshd ; \
+    mkdir /var/run/sshd ; \
     chown -R super:super  /var/run/supervisor ; \
     chmod +x /home/entrypoint.sh
 ENTRYPOINT ["/home/entrypoint.sh"]
