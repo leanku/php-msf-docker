@@ -11,7 +11,7 @@ install_fileinfo() {
 
     EXTENSION_DIR=$(php-config --extension-dir)
     if [ -f "${EXTENSION_DIR}/fileinfo.so" ]; then
-        echo 'extension=fileinfo.so' > /usr/local/php/etc/php.d/04-fileinfo.ini
+        touch /usr/local/php/etc/php.d/fileinfo.ini && echo 'extension=fileinfo.so' > /usr/local/php/etc/php.d/04-fileinfo.ini
     fi
 }
 

@@ -5,10 +5,10 @@ ARG PHP_VERSION=8.1.14
 ARG GH_MIRROR_URL="https://kgithub.com"
 ENV HOME /php-msf
 ENV NGX_WWW_ROOT /php-msf/data/www
-ENV NGX_LOG_ROOT /php-msf/data/wwwlogs
+ENV NGX_LOG_ROOT /php-msf/data/logs
 ENV TMP /tmp/php-msf/
 ENV DEBIAN_FRONTEND=noninteractive
-RUN mkdir -p /data/{wwwroot,wwwlogs,}
+RUN mkdir -p /data/{wwwroot,logs,}
 
 RUN set -eux \
     ; \
@@ -19,7 +19,7 @@ RUN set -eux \
     # yum install
     yum install -y cc gcc gcc-c++ zlib zlib-devel bzip2-devel openssl-devel ncurses-devel sqlite-devel tar gzip bzip2 ; \
     rpm -ivh https://dl.fedoraproject.org/pub/epel/7/x86_64/Packages/e/epel-release-7-14.noarch.rpm ; \
-    yum install -y  libargon2 libargon2-devel libtool libtool-tldl libtool-ltdl-devel cmake3 ; \
+    yum install -y  libargon2 libargon2-devel libtool libtool-tldl libtool-ltdl-devel cmake3 libyaml libyaml-devel ; \
     yum install -y \
     tar gzip bzip2 bzip2-devel zip unzip file perl-devel perl-ExtUtils-Embed perl-CPAN autoconf cmake librabbitmq-devel \
     libpng-devel libjpeg-devel freetype-devel libicu-devel oniguruma-deve libxslt-devel libzip-devel dnf oniguruma oniguruma-devel gd-devel postgresql-devel \
@@ -36,7 +36,7 @@ RUN set -eux \
 RUN set -eux \
     ; \
     mkdir -p "${TMP}" && cd "${TMP}" ; \
-    #cmake3
+    # cmake3
     yum remove cmake -y ; \
     if [[ -n "${GH_MIRROR_URL}" ]] ; then \
       curl -Lk --retry 3 "${GH_MIRROR_URL}/Kitware/CMake/archive/refs/tags/v3.25.2.tar.gz" | gunzip | tar x ; \
@@ -60,7 +60,13 @@ RUN set -eux \
     cmake -DCMAKE_INSTALL_PREFIX=/usr .. ; \
     make && make install ; \
     cd ../../ ; \
-    #-----libsodium
+    # libmemcached
+    curl -Lk --retry 3 "https://launchpad.net/libmemcached/1.0/1.0.18/+download/libmemcached-1.0.18.tar.gz" | gunzip | tar x ; \
+    cd libmemcached-1.0.18 ; \
+    ./configure --prefix=/usr/local/libmemcached-1.0.18 --with-memcached ; \
+    make && make install ; \
+    cd ../ ; \
+    # libsodium
     if [[ -n "${GH_MIRROR_URL}" ]] ; then \
       curl -Lk --retry 3 "${GH_MIRROR_URL}/jedisct1/libsodium/releases/download/1.0.18-RELEASE/libsodium-1.0.18.tar.gz" | gunzip | tar x ; \
     else \
@@ -73,7 +79,7 @@ RUN set -eux \
     echo /usr/local/lib > /etc/ld.so.conf.d/usr_local_lib.conf ; \
     ldconfig ; \
     cd .. ; \
-    #redis
+    # redis
     curl -Lk --retry 3 "https://download.redis.io/releases/redis-5.0.6.tar.gz" | gunzip | tar x ; \
     cd redis-5.0.6 ; \
     # mkdir -p /usr/local/redis/{etc,data,run,} ; \
@@ -108,7 +114,7 @@ RUN set -eux \
     useradd super ; \
     echo 'super:123456' |chpasswd ; \
     echo 'super  ALL=(ALL)  NOPASSWD: ALL' > /etc/sudoers ; \
-    # ssh
+    # ssh config
     echo y | ssh-keygen -t rsa -f /etc/ssh/ssh_host_rsa_key -N '' ; \
     echo y | ssh-keygen -t dsa -f /etc/ssh/ssh_host_dsa_key -N '' ; \
     echo y | ssh-keygen -t ecdsa -f /etc/ssh/ssh_host_ecdsa_key -N '' ; \
@@ -198,6 +204,8 @@ RUN set -eux \
     mv composer.phar /usr/local/bin/composer ; \
     chmod +x /usr/local/bin/composer ; \
     EXTENSION_DIR=$(php-config --extension-dir) ; \
+    composer config -g repo.packagist composer https://mirrors.aliyun.com/composer/ ; \
+    # 取消用命令 composer config -g --unset repos.packagist
     # redis extension
     curl -Lk --retry 3 "https://pecl.php.net/get/redis-5.3.7.tgz" | gunzip | tar x ; \
     cd redis-5.3.7 ; \
@@ -226,14 +234,9 @@ RUN set -eux \
     fi ; \
     cd .. ; \
     # php-amqp extension
-    # if [[ -n "${GH_MIRROR_URL}" ]] ; then \
-      # curl -Lk --retry 3 "${GH_MIRROR_URL}/php-amqp/php-amqp/archive/refs/tags/v1.11.0.tar.gz" | gunzip | tar x ; \
-      curl -Lk --retry 3 "https://pecl.php.net/get/amqp-1.10.2.tgz" | gunzip | tar x ; \
-    # else \
-      # curl -Lk --retry 3 "https://github.com/php-amqp/php-amqp/archive/refs/tags/v1.11.0.tar.gz" | gunzip | tar x ; \
-    # fi \
-      # ; \
-    cd amqp-1.10.2 ; \
+    curl -Lk --retry 3 "https://pecl.php.net/get/amqp-1.11.0.tgz" | gunzip | tar x ; \
+    cd amqp-1.11.0 ; \
+    export LC_ALL=C ; \
     phpize ; \
     ./configure --with-php-config=/usr/local/php/bin/php-config --with-amqp --with-librabbitmq-dir=/usr/local/rabbitmq-c-0.11.0 ; \
     make && make install ; \
@@ -241,6 +244,62 @@ RUN set -eux \
       touch /usr/local/php/etc/php.d/amqp.ini ; \
       echo 'extension=amqp.so' > /usr/local/php/etc/php.d/amqp.ini ; \
     fi ; \
+    cd .. ; \
+    # php-memcached extension
+    curl -Lk --retry 3 "https://pecl.php.net/get/memcached-3.2.0.tgz" | gunzip | tar x ; \
+    cd memcached-3.2.0 ; \
+    phpize ; \
+    ./configure --enable-memcached --with-php-config=/usr/local/php/bin/php-config --with-libmemcached-dir=/usr/local/libmemcached-1.0.18 --disable-memcached-sasl ; \
+    make && make install ; \
+    if [[ -f "${EXTENSION_DIR}/memcached.so" ]]; then \
+      touch /usr/local/php/etc/php.d/memcached.ini ; \
+      echo 'extension=memcached.so' > /usr/local/php/etc/php.d/memcached.ini ; \
+    fi ; \
+    cd .. ; \
+    # php-inotify extension
+    curl -Lk --retry 3 "https://pecl.php.net/get/inotify-3.0.0.tgz" | gunzip | tar x ; \
+    cd inotify-3.0.0 ; \
+    phpize ; \
+    ./configure --with-php-config=/usr/local/php/bin/php-config ; \
+    make && make install ; \
+    if [[ -f "${EXTENSION_DIR}/inotify.so" ]]; then \
+      touch /usr/local/php/etc/php.d/inotify.ini ; \
+      echo 'extension=inotify.so' > /usr/local/php/etc/php.d/inotify.ini ; \
+    fi ; \
+    cd .. ; \
+    # php-mongodb extension
+    curl -Lk --retry 3 "https://pecl.php.net/get/mongodb-1.15.1.tgz" | gunzip | tar x ; \
+    cd mongodb-1.15.1 ; \
+    phpize ; \
+    ./configure --with-php-config=/usr/local/php/bin/php-config ; \
+    make && make install ; \
+    if [[ -f "${EXTENSION_DIR}/mongodb.so" ]]; then \
+      touch /usr/local/php/etc/php.d/mongodb.ini ; \
+      echo 'extension=mongodb.so' > /usr/local/php/etc/php.d/mongodb.ini ; \
+    fi ; \
+    cd .. ; \
+    # php-apcu extension
+    curl -Lk --retry 3 "https://pecl.php.net/get/apcu-5.1.22.tgz" | gunzip | tar x ; \
+    cd apcu-5.1.22 ; \
+    phpize ; \
+    ./configure --with-php-config=/usr/local/php/bin/php-config ; \
+    make && make install ; \
+    if [[ -f "${EXTENSION_DIR}/apcu.so" ]]; then \
+      touch /usr/local/php/etc/php.d/apcu.ini ; \
+      echo 'extension=apcu.so' > /usr/local/php/etc/php.d/apcu.ini ; \
+    fi ; \
+    cd .. ; \
+    # php-yaml extension
+    curl -Lk --retry 3 "https://pecl.php.net/get/yaml-2.2.3.tgz" | gunzip | tar x ; \
+    cd yaml-2.2.3 ; \
+    phpize ; \
+    ./configure --with-php-config=/usr/local/php/bin/php-config ; \
+    make && make install ; \
+    if [[ -f "${EXTENSION_DIR}/apcu.so" ]]; then \
+      touch /usr/local/php/etc/php.d/yaml.ini ; \
+      echo 'extension=yaml.so' > /usr/local/php/etc/php.d/yaml.ini ; \
+    fi ; \
+    cd .. ; \
     cd / ; \
     \rm -rf "${TMP}" ;
 

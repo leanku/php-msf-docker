@@ -1,7 +1,7 @@
 #!/bin/bash
 
 install_imagemagick() {
-    curl -Lk https://ghproxy.com/https://github.com/ImageMagick/ImageMagick/archive/refs/tags/7.1.0-19.tar.gz | gunzip | tar x 
+    curl -Lk https://github.com/ImageMagick/ImageMagick/archive/refs/tags/7.1.0-19.tar.gz | gunzip | tar x 
 
     cd ImageMagick-7.1.0-19
     ./configure --prefix=/usr/local/imagemagick --enable-shared --enable-static
@@ -24,7 +24,7 @@ install_pecl_imagick() {
 
     EXTENSION_DIR=$(php-config --extension-dir)
     if [ -f "${EXTENSION_DIR}/imagick.so" ]; then
-        echo 'extension=imagick.so' > /usr/local/php/etc/php.d/03-imagick.ini
+        touch /usr/local/php/etc/php.d/03-imagick.ini && echo 'extension=imagick.so' > /usr/local/php/etc/php.d/03-imagick.ini
     fi
 
     cd ..

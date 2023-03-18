@@ -1,13 +1,11 @@
 #!/bin/bash
 
-install_pecl_memcached() {
-    apt-get install -y libmemcached-dev
+install_libmemcached() {
 
-    curl -Lk https://pecl.php.net/get/memcached-3.1.5.tgz | gunzip | tar x
+    curl -Lk https://launchpad.net/libmemcached/1.0/1.0.18/+download/libmemcached-1.0.18.tar.gz | gunzip | tar x
 
-    cd memcached-3.1.5
-    phpize
-    ./configure --with-php-config=/usr/local/php/bin/php-config
+    cd libmemcached-1.0.18
+    ./configure --prefix=/usr/local/libmemcached-1.0.18 --with-memcached
     make && make install
 
     EXTENSION_DIR=$(php-config --extension-dir)
@@ -19,11 +17,11 @@ install_pecl_memcached() {
 }
 
 install_pecl_memcache() {
-    curl -Lk https://pecl.php.net/get/memcache-8.0.tgz | gunzip | tar x
+    curl -Lkhttps://pecl.php.net/get/memcached-3.2.0.tgz | gunzip | tar x
 
-    cd memcache-8.0
+    cd memcached-3.2.0
     phpize
-    ./configure --with-php-config=/usr/local/php/bin/php-config
+    ./configure --enable-memcached --with-php-config=/usr/local/php/bin/php-config --with-libmemcached-dir=/usr/local/libmemcached-1.0.18 --disable-memcached-sasl
     make && make install
 
     EXTENSION_DIR=$(php-config --extension-dir)
@@ -38,14 +36,9 @@ install_pecl_memcache() {
 
 pushd /tmp/extension
     
-
-    UNINSTALLED=$(php --ri memcache | grep 'not present')
-    if [ "${UNINSTALLED}"x != ""x ] ; then 
-        install_pecl_memcache
-    fi
-
     UNINSTALLED=$(php --ri memcached | grep 'not present')
     if [ "${UNINSTALLED}"x != ""x ] ; then 
+        install_libmemcached
         install_pecl_memcached
     fi
 

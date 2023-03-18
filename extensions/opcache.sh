@@ -11,7 +11,7 @@ install_opcache() {
 
     EXTENSION_DIR=$(php-config --extension-dir)
     if [ -f "${EXTENSION_DIR}/opcache.so" ]; then
-        tee /usr/local/php/etc/php.d/08-opcache.ini <<-'EOF'
+        tee /usr/local/php/etc/php.d/opcache.ini <<-'EOF'
 [Zend Opcache]
 zend_extension=opcache.so
 opcache.enable = 1

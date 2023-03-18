@@ -8,10 +8,53 @@
    
 [English](./README_EN.md) | 简体中文
 
-### 包含扩展
+---
+## 镜像内容
+
+---
+latest
+---
+* PHP-8.14
+* composer
+* redis-5.3.7
+* swoole-src-4.8.6
+* nginx-1.21.5
+* supervisor
+* node
+
+### 包含扩展：
 ```bash
-bcmath,Core,ctype,curl,date,dom,exif,fileinfo,filter,ftp,gd,gettext,hash,iconv,intl,json,libxml,mbstring,mysqli,mysqlnd,openssl,pcntl,pcre,PDO,pdo_mysql,pdo_pgsql,pdo_sqlite,pgsql,Phar,posix,redis,Reflection,session,shmop,SimpleXML,soap,sockets,sodium,SPL,sqlite3,standard,sysvsem,tokenizer,xml,xmlreader,xmlwriter,xsl,zip,zlib
+amqp apcu bcmath Core ctype curl date dom exif fileinfo filter ftp gd gettext hash iconv inotify intl json libxml mbstring memcached mongodb mysqli mysqlnd openssl pcntl pcre PDO pdo_mysql pdo_pgsql pdo_sqlite pgsql Phar posix redis Reflection session shmop SimpleXML soap sockets sodium SPL sqlite3 standard swoole sysvsem tokenizer xml xmlreader xmlwriter xsl yaml zip zlib
 ``` 
+---
+
+### 默认启动
+```
+docker pull leanku/php-msf-docker
+
+docker run -it -d -p 2202:22 -p 80:80 -p 8000:8000 -p 9501:9501 \
+lenaku/php-msf-docker
+```
+------
+
+### SSH  
+
+默认用户：super   密码：123456
+
+------
+
+### Windows 运行示例
+```
+docker run --privileged --restart=always -it -d --hostname=php-msf  --name=php-msf-docker -p 2202:22 -p 80:80 -p 8000:8000 -p 9501:9501 -v /c/docker/www:/php-msf/data/www leanku/php-msf-docker
+```
+------
+
+### mac运行示例
+```
+docker run --privileged --restart=always -it -d --hostname=php-msf  --name=php-msf-docker -p 2202:22 -p 80:80 -p 8000:8000 -p 9501:9501 -v /Users/username/Docker/www:/php-msf/data/www lenaku/php-msf
+```
+
+------
 
 ### 命令行工具
 使用 `docker exec {CONTAINER ID} {COMMAND}` 
@@ -38,31 +81,7 @@ docker run --rm -it leanku/php-msf-docker:latest php --version
 docker run --rm -itleanku/php-msf-docker:latest nginx -v
 ```
 
-### 默认启动
-```
-docker run -it -d -p 2202:22 -p 80:80 -p 3306:3306 -p 8000:8000 -p 9501:9501 \
-lenaku/php-msf:0.0.1
-```
-------
-
-### SSH  
-
-默认用户：super   密码：123456
-
-------
-
-### Windows 运行示例
-```
-docker run --privileged --restart=always -it -d --hostname=php-msf  --name=php-msf-docker -p 2202:22 -p 80:80 -p 3306:3306 -p 8000:8000 -p 9501:9501 -v /c/docker/www:/php-msf/data/www leanku/php-msf-docker:0.0.1
-```
-------
-
-### mac运行示例
-```
-docker run --privileged --restart=always -it -d --hostname=php-msf  --name=php-msf-docker -p 2202:22 -p 80:80 -p 3306:3306 -p 8000:8000 -p 9501:9501 -v /Users/username/Docker/www:/php-msf/data/www lenaku/php-msf:0.0.1
-```
-
-------
+---
 
 ### 定制扩展
 ```
