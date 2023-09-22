@@ -26,6 +26,18 @@ latest
 ```bash
 amqp apcu bcmath Core ctype curl date dom exif fileinfo filter ftp gd gettext hash iconv inotify intl json libxml mbstring memcached mongodb mysqli mysqlnd openssl pcntl pcre PDO pdo_mysql pdo_pgsql pdo_sqlite pgsql Phar posix redis Reflection session shmop SimpleXML soap sockets sodium SPL sqlite3 standard swoole sysvsem tokenizer xml xmlreader xmlwriter xsl yaml zip zlib
 ``` 
+
+### Build
+```bash
+git clone https://github.com/leanku/php-msf-docker.git
+
+cd php-msf-docker
+
+docker build --build-arg PHP_VERSION="8.14" \
+  --build-arg NGINX_VERSION="1.21.5" \
+  -t php-msf-docker:8.1 \
+  -f ./Dockerfile .
+```
 ---
 
 ### 默认启动
@@ -45,7 +57,7 @@ lenaku/php-msf-docker
 
 ### Windows 运行示例
 ```
-docker run --privileged --restart=always -it -d --hostname=php-msf  --name=php-msf-docker -p 2202:22 -p 80:80 -p 8000:8000 -p 9501:9501 -v /c/docker/www:/php-msf/data/www leanku/php-msf-docker
+docker run --privileged --restart=always -it -d --hostname=php-msf  --name=php-msf-docker -p 2202:22 -p 80:80 -p 8000:8000 -p 9501:9501 -v  D:\Develop\Docker\WWW:/php-msf/data/www leanku/php-msf-docker
 ```
 ------
 

@@ -1,8 +1,8 @@
 FROM centos:centos7.9.2009
 LABEL maintainer="Leanku<leanku@foxmail.com>"
 ARG NGINX_VERSION=1.21.5
-ARG PHP_VERSION=8.1.14
-ARG GH_MIRROR_URL="https://kgithub.com"
+ARG PHP_VERSION=7.4.33
+ARG GH_MIRROR_URL="https://github.com"
 ENV HOME /php-msf
 ENV NGX_WWW_ROOT /php-msf/data/www
 ENV NGX_LOG_ROOT /php-msf/data/logs
@@ -16,6 +16,8 @@ RUN set -eux \
     # Change yum repos
     mv /etc/yum.repos.d/CentOS-Base.repo /etc/yum.repos.d/CentOS-Base.repo.backup ; \
     wget -O /etc/yum.repos.d/CentOS-Base.repo https://mirrors.aliyun.com/repo/Centos-7.repo ; \
+    yum clean all ; \
+    yum makecache ; \
     # yum install
     yum install -y cc gcc gcc-c++ zlib zlib-devel bzip2-devel openssl-devel ncurses-devel sqlite-devel tar gzip bzip2 ; \
     rpm -ivh https://dl.fedoraproject.org/pub/epel/7/x86_64/Packages/e/epel-release-7-14.noarch.rpm ; \
