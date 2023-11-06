@@ -151,4 +151,4 @@ main() {
 
 main "$@" || exit 1
 
-# ./build.sh devcto env
+# ./build.sh leanku env

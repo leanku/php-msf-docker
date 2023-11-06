@@ -221,17 +221,18 @@ RUN set -eux \
     cd .. ; \
     # swoole extension
     if [[ -n "${GH_MIRROR_URL}" ]] ; then \
-      curl -Lk --retry 3 "${GH_MIRROR_URL}/swoole/swoole-src/archive/v4.8.6.tar.gz" | gunzip | tar x ; \
+      curl -Lk --retry 3 "${GH_MIRROR_URL}/swoole/swoole-src/archive/v5.0.2.tar.gz" | gunzip | tar x ; \
     else \
-      curl -Lk --retry 3 "https://github.com/swoole/swoole-src/archive/v4.8.6.tar.gz" | gunzip | tar x ; \
+      curl -Lk --retry 3 "https://github.com/swoole/swoole-src/archive/v5.0.2.tar.gz" | gunzip | tar x ; \
     fi \
       ; \
-    cd swoole-src-4.8.6 ; \
+    cd swoole-src-5.0.2 ; \
     phpize ; \
     ./configure --with-php-config=/usr/local/php/bin/php-config --enable-openssl --enable-mysqlnd --enable-sockets ; \
     make && make install ; \
     if [[ -f "${EXTENSION_DIR}/swoole.so" ]]; then \
       touch /usr/local/php/etc/php.d/swoole.ini ; \
+      echo 'swoole.use_shortname=off' > /usr/local/php/etc/php.d/swoole.ini ; \
       echo 'extension=swoole.so' > /usr/local/php/etc/php.d/swoole.ini ; \
     fi ; \
     cd .. ; \
