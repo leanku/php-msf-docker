@@ -1,7 +1,7 @@
 FROM centos:centos7.9.2009
 LABEL maintainer="Leanku<leanku@foxmail.com>"
 ARG NGINX_VERSION=1.21.5
-ARG PHP_VERSION=7.4.33
+ARG PHP_VERSION=8.1.14
 ARG GH_MIRROR_URL="https://github.com"
 ENV HOME /php-msf
 ENV NGX_WWW_ROOT /php-msf/data/www
@@ -29,12 +29,10 @@ RUN set -eux \
     libcurl3-gnutls libcurl4-gnutls-dev libcurl4-openssl-dev libpng-dev libjpeg8 libjpeg8-dev \
     libicu-devel libxslt1-devel libzip-devel libssl-devel libfreetype-devel libfreetype6 libpq-devel libpq5 libpcre3 libpcre3-devel libsodium-devel ; \
     ln -s /usr/lib64/libc-client.so /usr/lib/libc-client.so ; \
-    yum -y install net-tools openssl openssh-server ; \
+    yum -y install net-tools openssl openssh-server sudo ; \
     yum install -y git python3 python3-devel vim curl supervisor ; \
     yum install -y nodejs && rpm -qa 'node|npm'
    
-
-    
 RUN set -eux \
     ; \
     mkdir -p "${TMP}" && cd "${TMP}" ; \
@@ -87,6 +85,8 @@ RUN set -eux \
     # mkdir -p /usr/local/redis/{etc,data,run,} ; \
     make && make install PREFIX=/usr/local/redis ; \
     cp ${TMP}/redis-5.0.6/redis.conf /usr/local/redis/bin/ ; \
+    sed -ri '/bind 127.0.0.1/cbind 0.0.0.0' /usr/local/redis/bin/redis.conf ; \
+    sed -ri '/protected-mode yes/cprotected-mode no' /usr/local/redis/bin/redis.conf ; \
     ln -s /usr/local/redis/bin/* /usr/local/bin/ ; \
     cd .. ; \
     # nginx
@@ -209,8 +209,8 @@ RUN set -eux \
     composer config -g repo.packagist composer https://mirrors.aliyun.com/composer/ ; \
     # 取消用命令 composer config -g --unset repos.packagist
     # redis extension
-    curl -Lk --retry 3 "https://pecl.php.net/get/redis-5.3.7.tgz" | gunzip | tar x ; \
-    cd redis-5.3.7 ; \
+    curl -Lk --retry 3 "https://pecl.php.net/get/redis-6.0.2.tgz" | gunzip | tar x ; \
+    cd redis-6.0.2 ; \
     phpize ; \
     ./configure --with-php-config=/usr/local/php/bin/php-config ; \
     make && make install ; \
@@ -232,8 +232,7 @@ RUN set -eux \
     make && make install ; \
     if [[ -f "${EXTENSION_DIR}/swoole.so" ]]; then \
       touch /usr/local/php/etc/php.d/swoole.ini ; \
-      echo 'swoole.use_shortname=off' > /usr/local/php/etc/php.d/swoole.ini ; \
-      echo 'extension=swoole.so' > /usr/local/php/etc/php.d/swoole.ini ; \
+      echo -e  "extension=swoole.so\nswoole.use_shortname='Off'" >> /usr/local/php/etc/php.d/swoole.ini ; \
     fi ; \
     cd .. ; \
     # php-amqp extension
