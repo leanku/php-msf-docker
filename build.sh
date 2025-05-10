@@ -45,8 +45,8 @@ function main {
     
     # 检查必要命令
     check_command docker
-    check_command wget
-    check_command tar
+    # check_command wget
+    # check_command tar
     
     # 检查Docker状态
     check_docker

@@ -1,0 +1,37 @@
+* almalinux:
+AlmaLinux 和 CentOS 都是基于 RHEL（Red Hat Enterprise Linux） 的衍生发行版,
+AlmaLinux企业级稳定，完全兼容 RHEL, 是 CentOS 的最佳替代品。
+
+* 确认系统环境和版本
+cat /etc/os-release
+
+* 软件安装使用dnf替代yum
+查看软件 dnf list installed
+
+* docker构建缓存清理
+docker builder prune
+
+* 编译过程中出现的一些问题比如 No such file or directory 可以用ls dirname && exit 1 调试
+
+* 查看pkg-config，比如验证pkg-config 是否能找到 grpc
+export PKG_CONFIG_PATH=/php-msf/grpc/lib/pkgconfig:$PKG_CONFIG_PATH
+pkg-config --modversion grpc
+pkg-config --modversion absl_base
+
+*docker复制文件 windows路径要用""包裹
+docker cp <本地文件路径> <容器名或ID>:<容器目标路径> 如 docker cp "D:\Develop\Docker\docker\new\php-msf-docker\package\abseil-cpp.tar.gz" 64dd84e9be65:/tmp/
+docker cp <容器名或ID>:<容器内文件路径> <本地目标路径>
+
+* 验证PHP扩展 grpc为例
+/php-msf/php/bin/php -m | grep -E 'grpc'
+或
+echo "gRPC Core: $(pkg-config --modversion grpc)"
+echo "PHP Extension: $(php -r 'echo phpversion("grpc") ?: "Not Loaded";')"
+echo "Protobuf: $(protoc --version 2>/dev/null || echo "Not Found")"
+
+* windows运行示例，需要管理员终端
+docker run -it -p 80:80 -p 6379:6379 -p 8000:8000 -p 5920:5920 -p 2222:22 -v D:\Develop\Docker\docker\new\php-msf-docker\www:/php-msf/data/www --name php-msf leanku/php-msf-docker:almalinux-php8.2
+
+
+
+
