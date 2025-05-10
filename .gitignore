@@ -1,2 +1,4 @@
 .idea
 .env
+# 文件太大
+package/grpc.tar.gz
