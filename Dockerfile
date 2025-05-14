@@ -239,21 +239,22 @@ ENV PATH="${INSTALL_DIR}/php/bin:${PATH}"
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer && \
     composer config -g repo.packagist composer https://mirrors.aliyun.com/composer/
 
-RUN echo 'export PATH="${INSTALL_DIR}/php/bin:/php-msf/nginx/sbin:/php-msf/redis/bin:${INSTALL_DIR}/protobuf/bin:${INSTALL_DIR}/grpc/bin:$PATH"' >> /etc/profile && \
-    echo 'export PATH="${INSTALL_DIR}/php/bin:/php-msf/nginx/sbin:/php-msf/redis/bin:${INSTALL_DIR}/protobuf/bin:${INSTALL_DIR}/grpc/bin:$PATH"' >> /etc/bash.bashrc && \
+RUN echo 'export PATH="/php-msf/php/bin:/php-msf/nginx/sbin:/php-msf/redis/bin:/php-msf/protobuf/bin:/php-msf/grpc/bin:$PATH"' >> /etc/profile && \
+    echo 'export PATH="/php-msf/php/bin:/php-msf/nginx/sbin:/php-msf/redis/bin:/php-msf/protobuf/bin:/php-msf/grpc/bin:$PATH"' >> /etc/bash.bashrc && \
     echo 'PermitUserEnvironment yes' >> /etc/ssh/sshd_config && \
     source /etc/profile
 
 # 创建用户和权限
 RUN groupadd super && \
     useradd -g super nginx && \
+    echo "root:zV9eA8nI2eS5kA1h" | chpasswd && \
     useradd -m -s /bin/bash -g super super && \
     echo "super:123456" | chpasswd && \
     echo 'super  ALL=(ALL)  NOPASSWD: ALL' > /etc/sudoers && \
-    chown -R super:super ${INSTALL_DIR} /var/run && \
-    chown -R nginx:super ${INSTALL_DIR}/nginx && \
+    chown -R super:super ${INSTALL_DIR}/ /var/run && \
+    chown -R super:super ${INSTALL_DIR}/nginx/ && \
     usermod -aG wheel super && \
-    chmod 775 ${INSTALL_DIR}
+    chmod -R 775 ${INSTALL_DIR}
 
 #配置super账号可远程SSH
 RUN mkdir -p /home/super/.ssh && \

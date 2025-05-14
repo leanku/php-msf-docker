@@ -32,6 +32,9 @@ docker run -it \
     --name php-msf \
     leanku/php-msf-docker:almalinux-php8.2
     
+# 只允许本机访问容器的 SSH      
+-p 127.0.0.1:2222:22  
+
 # windows 挂载路径示例
 -v D:\Develop\Docker\docker\new\php-msf-docker\www:/php-msf/data/www
 ```
