@@ -12,8 +12,9 @@ NC='\033[0m'
 # PHP 安装目录
 PHP_DIR="/php-msf/php"
 
-# 要安装的扩展列表（直接在这里定义，已定义：grpc protobuf swoole redis amqp memcached imagick）
-EXTENSIONS="protobuf swoole redis amqp memcached imagick"
+# PHP 8.5 已验证的常用 PECL 扩展。igbinary 必须先于 redis/memcached 安装。
+# gRPC 源码编译耗时很长，暂时不随默认镜像构建；需要时恢复 grpc 到此列表。
+EXTENSIONS="protobuf swoole redis amqp memcached imagick apcu"
 # ======================================
 
 # 检查 PHP 环境
@@ -103,25 +104,10 @@ compile_from_source() {
 # Redis 扩展
 ext_redis() {
     echo -e "${GREEN}安装 Redis 扩展...${NC}"
-    
-    # 尝试多个版本，优先使用最新稳定版
-    for version in "6.2.0" "6.0.2" "5.3.7"; do
-        if ${PHP_DIR}/bin/pecl list | grep -q redis; then
-            break
-        fi
-        echo -e "${YELLOW}尝试安装 redis-$version...${NC}"
-        if echo "yes" | ${PHP_DIR}/bin/pecl install redis-$version 2>/dev/null; then
-            echo "extension=redis.so" > ${PHP_DIR}/etc/conf.d/redis.ini
-            echo -e "${GREEN}Redis 扩展 $version 安装完成${NC}"
-            return 0
-        fi
-    done
-    
-    # PECL 失败，源码编译
     compile_from_source "redis" \
-        "https://pecl.php.net/get/redis-6.2.0.tgz" \
+        "https://pecl.php.net/get/redis-6.3.0.tgz" \
         "" \
-        ""
+        "--enable-redis-igbinary"
     
     echo "extension=redis.so" > ${PHP_DIR}/etc/conf.d/redis.ini
     echo -e "${GREEN}Redis 扩展安装完成 (源码编译)${NC}"
@@ -135,7 +121,7 @@ ext_swoole() {
     apk add --no-cache openssl-dev curl-dev
     
     # 尝试 PECL 安装
-    for version in "6.0.1" "5.1.6" "5.1.5"; do
+    for version in "6.2.2"; do
         if ${PHP_DIR}/bin/pecl list | grep -q swoole; then
             break
         fi
@@ -147,10 +133,10 @@ ext_swoole() {
         fi
     done
     
-    # 源码编译
+    # PECL 不随 PHP 源码安装，使用固定源码版本保证构建可复现。
     compile_from_source "swoole" \
-        "https://github.com/swoole/swoole-src/archive/master.tar.gz" \
-        "swoole-src-master" \
+        "https://github.com/swoole/swoole-src/archive/refs/tags/v6.2.2.tar.gz" \
+        "swoole-src-6.2.2" \
         "--enable-openssl --enable-mysqlnd --enable-sockets --enable-http2"
     
     echo -e "extension=swoole.so\nswoole.use_shortname='Off'" > ${PHP_DIR}/etc/conf.d/swoole.ini
@@ -210,69 +196,21 @@ ext_grpc() {
 # Protobuf 扩展
 ext_protobuf() {
     echo -e "${GREEN}安装 Protobuf 扩展...${NC}"
-    
-    # 根据 PHP 版本选择 Protobuf 版本
-    if echo "$PHP_VERSION" | grep -q "^8.[3-9]"; then
-        # PHP 8.3+ 使用 4.x 或 5.x
-        for version in "5.34.0" "4.33.5" "4.32.1"; do
-            if echo "yes" | ${PHP_DIR}/bin/pecl install protobuf-$version 2>/dev/null; then
-                echo "extension=protobuf.so" > ${PHP_DIR}/etc/conf.d/protobuf.ini
-                echo -e "${GREEN}Protobuf 扩展 $version 安装完成${NC}"
-                return 0
-            fi
-        done
-    else
-        # PHP 8.0-8.2 使用 3.x
-        if echo "yes" | ${PHP_DIR}/bin/pecl install protobuf-3.25.3 2>/dev/null; then
-            echo "extension=protobuf.so" > ${PHP_DIR}/etc/conf.d/protobuf.ini
-            echo -e "${GREEN}Protobuf 扩展 3.25.3 安装完成${NC}"
-            return 0
-        fi
-    fi
-    
-    # PECL 失败，尝试 Alpine 包
-    if apk add --no-cache php83-pecl-protobuf 2>/dev/null; then
-        echo -e "${GREEN}Protobuf 扩展安装完成 (Alpine 包)${NC}"
-        return 0
-    fi
-    
-    # 最后尝试源码编译简化版
-    echo -e "${YELLOW}尝试源码编译 Protobuf...${NC}"
-    cd /tmp
-    wget -q https://pecl.php.net/get/protobuf-4.33.5.tgz
-    tar -zxvf protobuf-4.33.5.tgz
-    cd protobuf-4.33.5
-    
-    ${PHP_DIR}/bin/phpize
-    ./configure --with-php-config=${PHP_DIR}/bin/php-config
-    make -j$(nproc)
-    make install
-    
+    compile_from_source "protobuf" \
+        "https://pecl.php.net/get/protobuf-5.35.1.tgz" \
+        "protobuf-5.35.1" \
+        ""
     echo "extension=protobuf.so" > ${PHP_DIR}/etc/conf.d/protobuf.ini
-    
-    cd /tmp
-    rm -rf protobuf-4.33.5 protobuf-4.33.5.tgz
-    
-    echo -e "${GREEN}Protobuf 扩展安装完成 (源码编译)${NC}"
+    echo -e "${GREEN}Protobuf 扩展安装完成${NC}"
 }
 
 # AMQP 扩展
 ext_amqp() {
     echo -e "${GREEN}安装 AMQP 扩展...${NC}"
-    
     apk add --no-cache rabbitmq-c-dev
-    
-    for version in "2.1.2" "2.1.1" "2.0.1"; do
-        if echo "yes" | ${PHP_DIR}/bin/pecl install amqp-$version 2>/dev/null; then
-            echo "extension=amqp.so" > ${PHP_DIR}/etc/conf.d/amqp.ini
-            echo -e "${GREEN}AMQP 扩展 $version 安装完成${NC}"
-            return 0
-        fi
-    done
-    
     compile_from_source "amqp" \
-        "https://github.com/php-amqp/php-amqp/archive/refs/tags/v1.11.0.tar.gz" \
-        "php-amqp-1.11.0" \
+        "https://pecl.php.net/get/amqp-2.2.0.tgz" \
+        "amqp-2.2.0" \
         ""
     
     echo "extension=amqp.so" > ${PHP_DIR}/etc/conf.d/amqp.ini
@@ -375,6 +313,17 @@ ext_igbinary() {
     echo -e "${GREEN}igbinary 扩展安装完成 (源码编译)${NC}"
 }
 
+# APCu 用户态缓存扩展
+ext_apcu() {
+    echo -e "${GREEN}安装 APCu 扩展...${NC}"
+    compile_from_source "apcu" \
+        "https://pecl.php.net/get/apcu-5.1.28.tgz" \
+        "apcu-5.1.28" \
+        ""
+    echo "extension=apcu.so" > ${PHP_DIR}/etc/conf.d/apcu.ini
+    echo "apc.enable_cli=1" >> ${PHP_DIR}/etc/conf.d/apcu.ini
+}
+
 # 验证安装结果
 verify_installation() {
     echo -e "${YELLOW}验证扩展安装结果...${NC}"
@@ -382,11 +331,12 @@ verify_installation() {
     local php_bin="${PHP_DIR}/bin/php"
     local installed_exts=$($php_bin -m | grep -v "^\[")
     
-    for ext in $EXTENSIONS; do
+    for ext in igbinary $EXTENSIONS; do
         if echo "$installed_exts" | grep -q "^$ext$"; then
             echo -e "${GREEN}✓ $ext 安装成功${NC}"
         else
             echo -e "${RED}✗ $ext 安装失败${NC}"
+            exit 1
         fi
     done
 }

@@ -2,9 +2,9 @@
 FROM alpine:3.23 AS builder
 
 # 定义版本和目录
-ARG PHP_VERSION=8.3.29
-ARG NGINX_VERSION=1.25.4
-ARG REDIS_VERSION=7.2.4
+ARG PHP_VERSION=8.5.10
+ARG NGINX_VERSION=1.30.4
+ARG REDIS_VERSION=7.4.11
 ARG PROTOC_VERSION=3.20.1
 ENV INSTALL_DIR=/php-msf \
     DATA_DIR=/php-msf/data \
@@ -35,22 +35,19 @@ RUN apk add --no-cache \
     # 图像处理
     libjpeg-turbo-dev libpng-dev libwebp-dev freetype-dev \
     # 压缩和加密
-    libzip-dev bzip2-dev openssl-dev zlib-dev \
+    libzip-dev bzip2-dev openssl-dev zlib-dev libsodium-dev \
     # 网络和协议
     curl-dev libmemcached-dev rabbitmq-c-dev \
     # 国际化
     gettext-dev icu-dev \
     # 其他
-    readline-dev linux-headers libc-dev
+    readline-dev linux-headers libc-dev pcre2-dev libevent-dev imagemagick-dev
 
 # 复制本地源码包（如果存在）
 # COPY ./package/* ${INSTALL_DIR}/SoftwarePackage/
 
 # 安装 Nginx
 RUN cd /tmp && \
-    # 下载 PCRE 源码
-    wget https://sourceforge.net/projects/pcre/files/pcre/8.45/pcre-8.45.tar.gz && \
-    tar -zxvf pcre-8.45.tar.gz && \
     # 下载 Nginx 源码
     wget https://nginx.org/download/nginx-${NGINX_VERSION}.tar.gz && \
     tar -zxvf nginx-${NGINX_VERSION}.tar.gz && \
@@ -62,7 +59,6 @@ RUN cd /tmp && \
         --with-http_stub_status_module \
         --with-http_realip_module \
         --with-http_gzip_static_module \
-        --with-pcre=/tmp/pcre-8.45 \
         --with-pcre-jit \
         --with-stream \
         --with-stream_ssl_module \
@@ -75,7 +71,7 @@ RUN cd /tmp && \
     # 验证
     ${INSTALL_DIR}/nginx/sbin/nginx -v && \
     # 清理
-    rm -rf /tmp/nginx-* /tmp/pcre-* && \
+    rm -rf /tmp/nginx-* && \
     adduser -D -H -s /sbin/nologin -G www-data -u 82 nginx 2>/dev/null || true
 
 # 安装 Redis
@@ -83,7 +79,7 @@ RUN cd /tmp && \
     wget https://download.redis.io/releases/redis-${REDIS_VERSION}.tar.gz && \
     tar -zxvf redis-${REDIS_VERSION}.tar.gz && \
     cd redis-${REDIS_VERSION} && \
-    make -j$(nproc) MALLOC=libc && \
+    make -j$(nproc) MALLOC=libc BUILD_TLS=yes && \
     make PREFIX=${INSTALL_DIR}/redis install && \
     mkdir -p ${INSTALL_DIR}/redis/conf && \
     cp redis.conf ${INSTALL_DIR}/redis/conf/ && \
@@ -117,14 +113,14 @@ RUN cd /tmp && \
         --with-config-file-scan-dir=${INSTALL_DIR}/php/etc/conf.d \
         --with-extension-dir=${INSTALL_DIR}/php/extensions \
         --enable-fpm --with-fpm-user=nginx --with-fpm-group=nginx \
-        --with-openssl --with-openssl-dir=/usr --with-curl --with-zlib \
+        --with-openssl --with-sodium --with-curl --with-zlib \
         --with-mysqli --with-pdo-mysql --with-pdo-sqlite \
         --enable-gd --with-jpeg --with-webp --with-freetype \
         --with-iconv --with-gettext --with-bz2 --with-zip --with-libzip=/usr \
         --enable-mysqlnd --enable-pcntl --enable-sockets --enable-opcache \
-        --enable-debug --disable-short-tags --enable-bcmath --enable-calendar \
+        --disable-short-tags --enable-bcmath --enable-calendar \
         --enable-exif --enable-ftp --enable-intl --enable-mbstring \
-        --enable-soap --enable-xml --with-libxml --with-xmlrpc --with-pcre-jit && \
+        --enable-soap --enable-xml --with-libxml --with-xsl --with-pcre-jit && \
     make -j$(nproc) && make install && \
     cp php.ini-production ${INSTALL_DIR}/php/etc/php.ini && \
     mkdir -p ${INSTALL_DIR}/php/etc/conf.d ${INSTALL_DIR}/php/var/{run,log} && \
@@ -141,7 +137,7 @@ RUN chmod +x /tmp/install-php-extensions.sh && \
     rm -rf /tmp/install-php-extensions.sh ${INSTALL_DIR}/SoftwarePackage/*
 
 # 第二阶段：运行环境
-FROM alpine:3.23
+FROM alpine:3.23 AS runtime
 
 # 定义环境变量
 ENV INSTALL_DIR=/php-msf \
@@ -159,11 +155,10 @@ COPY --from=builder ${INSTALL_DIR} ${INSTALL_DIR}
 COPY --from=builder /etc/ld.so.conf.d/protobuf.conf /etc/ld.so.conf.d/
 
 # 安装运行时依赖（使用国内镜像源）
-RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories && \
-    apk update && apk add --no-cache \
-        supervisor openssh-server sudo vim wget curl git htop tzdata bash shadow \
-        openssl pcre zlib libxml2 libzip libjpeg-turbo libwebp libpng freetype \
-        icu libmemcached oniguruma imagemagick rabbitmq-c procps musl-locales musl-locales-lang && \
+RUN apk add --no-cache \
+        supervisor openssh-server sudo curl tzdata bash shadow nodejs npm \
+        openssl pcre2 zlib libxml2 libzip libjpeg-turbo libwebp libpng freetype \
+        icu libmemcached oniguruma imagemagick rabbitmq-c libsodium libxslt libevent musl-locales musl-locales-lang && \
     ln -sf /usr/share/zoneinfo/${TZ} /etc/localtime && echo "${TZ}" > /etc/timezone && \
     rm -rf /var/cache/apk/*
 
@@ -212,6 +207,8 @@ COPY ./config/nginx/conf.d/www.conf ${INSTALL_DIR}/nginx/conf/conf.d/
 COPY ./config/nginx/conf/nginx.conf ${INSTALL_DIR}/nginx/conf/
 COPY ./config/php/php-fpm.conf ${INSTALL_DIR}/php/etc/
 COPY ./config/php/www.conf ${INSTALL_DIR}/php/etc/php-fpm.d/
+COPY ./config/php/conf.d/ ${INSTALL_DIR}/php/etc/conf.d/
+COPY ./config/redis/redis.conf ${INSTALL_DIR}/redis/conf/redis.conf
 COPY ./config/supervisor/supervisord.conf /etc/
 COPY ./config/supervisor/supervisord.d/*.conf /etc/supervisor/conf.d/
 COPY ./config/motd /etc/motd
@@ -243,12 +240,21 @@ RUN chown -R super:super ${INSTALL_DIR} /var/run && \
 
 # 验证关键组件
 RUN ${INSTALL_DIR}/php/bin/php -v | head -1 && \
+    ${INSTALL_DIR}/php/bin/php -m | grep -E 'gd|imagick|intl|openssl|redis|sodium' && \
     ${INSTALL_DIR}/nginx/sbin/nginx -v 2>&1 | head -1 && \
-    ${INSTALL_DIR}/redis/bin/redis-server --version | head -1 || true
+    ${INSTALL_DIR}/redis/bin/redis-server --version | head -1 && \
+    node --version && npm --version
 
 # 暴露端口
-EXPOSE 80 6379 22 8000 9000 9501 9502
+EXPOSE 80 6379 16379 22 8000 9000 9501 9502
 
 # 启动命令
 ENTRYPOINT ["/home/entrypoint.sh"]
 CMD ["-D"]
+
+# 开发辅助工具与运行镜像分离；仅在需要交互调试时构建 --target dev。
+FROM runtime AS dev
+RUN apk add --no-cache vim git wget htop procps
+
+# 默认构建保持为精简运行镜像；开发镜像须显式指定 --target dev。
+FROM runtime

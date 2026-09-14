@@ -7,13 +7,21 @@
     \|_______|\|_______|\|__|\|__|\|__| \|__|\|__| \|__|\|_______|
                                                                                                                                    
 ═══════════════════════════════════════════════════════════════════════════════
-                Welcome to leanku/php-msf-docker !
-              Blog address is https://blog.leanku.com
+                    PHP MSF Docker Development Environment
+                  leanku/php-msf-docker · Alpine Linux
 ═══════════════════════════════════════════════════════════════════════════════
 
-Component Versions Based on Alpine
-  • PHP │ Nginx │ Redis| Supervisor
-Default Login
-  • User: super | Password: 123456 (sudo access)
-Web Root
-  • /php-msf/data/www
+Runtime
+  • PHP 8.5 · Nginx 1.30 · Redis 7.4 · Node.js · Supervisor
+
+Quick Access
+  • Web Root : /php-msf/data/www
+  • Web      : http://localhost:8000
+  • Redis    : 127.0.0.1:6379
+
+Developer Account
+  • User     : super
+  • Password : 123456 (sudo enabled; change before production use)
+
+Documentation
+  • https://github.com/leanku/php-msf-docker
