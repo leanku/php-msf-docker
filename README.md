@@ -209,3 +209,11 @@ docker exec -it php-msf supervisorctl status
 | Redis 扩展找不到 `php_smart_string.h` | 确认构建日志使用 `redis-6.3.0`，而不是旧版 6.2.0 |
 | AMQP 编译的 Zend API 参数错误 | 确认构建日志使用 `amqp-2.2.0` |
 | gRPC 编译耗时过长 | 默认未启用；按需加入扩展列表后单独构建 |
+
+## 其他问题
+- Laravel目录权限问题为例
+```
+ls -ld /proc/9
+chown -R nginx:www-data storage bootstrap/cache
+chmod -R 775 storage bootstrap/cache
+```
