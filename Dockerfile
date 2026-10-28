@@ -2,7 +2,7 @@
 FROM alpine:3.23 AS builder
 
 # 定义版本和目录
-ARG PHP_VERSION=8.5.10
+ARG PHP_VERSION=8.5.12
 ARG NGINX_VERSION=1.30.4
 ARG REDIS_VERSION=7.4.11
 ARG PROTOC_VERSION=3.20.1
@@ -27,11 +27,11 @@ RUN mkdir -p \
 # 安装编译工具和依赖
 RUN apk add --no-cache \
     # 基础工具
-    wget curl unzip git \
+    wget curl unzip git bash \
     # 编译工具链
     gcc g++ make autoconf automake libtool cmake \
     # PHP 核心依赖
-    libxml2-dev libxslt-dev sqlite-dev oniguruma-dev \
+    libxml2-dev libxslt-dev sqlite-dev oniguruma-dev postgresql-dev\
     # 图像处理
     libjpeg-turbo-dev libpng-dev libwebp-dev freetype-dev \
     # 压缩和加密
@@ -120,7 +120,7 @@ RUN cd /tmp && \
         --enable-mysqlnd --enable-pcntl --enable-sockets --enable-opcache \
         --disable-short-tags --enable-bcmath --enable-calendar \
         --enable-exif --enable-ftp --enable-intl --enable-mbstring \
-        --enable-soap --enable-xml --with-libxml --with-xsl --with-pcre-jit && \
+        --enable-soap --enable-xml --with-libxml --with-xsl --with-pcre-jit --with-pdo-pgsql && \
     make -j$(nproc) && make install && \
     cp php.ini-production ${INSTALL_DIR}/php/etc/php.ini && \
     mkdir -p ${INSTALL_DIR}/php/etc/conf.d ${INSTALL_DIR}/php/var/{run,log} && \
@@ -157,7 +157,7 @@ COPY --from=builder /etc/ld.so.conf.d/protobuf.conf /etc/ld.so.conf.d/
 # 安装运行时依赖（使用国内镜像源）
 RUN apk add --no-cache \
         supervisor openssh-server sudo curl tzdata bash shadow nodejs npm \
-        openssl pcre2 zlib libxml2 libzip libjpeg-turbo libwebp libpng freetype \
+        openssl pcre2 zlib libxml2 libzip libjpeg-turbo libwebp libpng freetype libpq\
         icu libmemcached oniguruma imagemagick rabbitmq-c libsodium libxslt libevent musl-locales musl-locales-lang && \
     ln -sf /usr/share/zoneinfo/${TZ} /etc/localtime && echo "${TZ}" > /etc/timezone && \
     rm -rf /var/cache/apk/*
