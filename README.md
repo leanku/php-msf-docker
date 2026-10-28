@@ -209,10 +209,18 @@ docker exec -it php-msf supervisorctl status
 - 建议将应用源码、Redis 数据和日志挂载到持久化卷，避免容器重建造成数据丢失。
 
 ## 常见构建问题
-
 | 现象                                   | 处理方式                                          |
 | -------------------------------------- | ------------------------------------------------- |
 | 旧层仍使用不兼容扩展                   | 使用`docker build --no-cache ...` 重新构建      |
 | Redis 扩展找不到`php_smart_string.h` | 确认构建日志使用`redis-6.3.0`，而不是旧版 6.2.0 |
 | AMQP 编译的 Zend API 参数错误          | 确认构建日志使用`amqp-2.2.0`                    |
 | gRPC 编译耗时过长                      | 默认未启用；按需加入扩展列表后单独构建            |
+| 文件格式问题，build时出现文件NotFound   |行尾序列建议用LF                                   |
+
+## 其他问题
+- Laravel目录权限问题为例
+```
+ls -ld /proc/9
+chown -R nginx:www-data storage bootstrap/cache
+chmod -R 775 storage bootstrap/cache
+```
